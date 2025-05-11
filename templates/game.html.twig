@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЗМЕЙКА-3000 | HOLO TERMINAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <style>
+        :root {
+            --glow-color: #0f0;
+            --crt-curve: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: var(--glow-color);
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                    linear-gradient(rgba(0, 30, 0, 0.2) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 30, 0, 0.2) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--glow-color);
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(1px);
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { transform: translate(calc(var(--x-end) * 1vw), calc(var(--y-end) * 1vh)) rotate(360deg); opacity: 0; }
+        }
+
+        .crt-screen {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 10, 0, 0.7);
+            position: relative;
+            box-shadow:
+                    0 0 30px rgba(0, 255, 0, 0.5),
+                    inset 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+
+        .glass-reflection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.1) 0%,
+                    transparent 30%,
+                    transparent 70%,
+                    rgba(255, 255, 255, 0.05) 100%
+            );
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 1.8rem;
+            text-shadow:
+                    0 0 5px var(--glow-color),
+                    0 0 10px var(--glow-color);
+            letter-spacing: 3px;
+            color: #fff;
+            z-index: 10;
+        }
+
+        .title::after {
+            content: "▮";
+            animation: cursor-blink 1s infinite;
+            position: absolute;
+            color: var(--glow-color);
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        #ui {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            color: var(--glow-color);
+            font-size: 1.2rem;
+            z-index: 10;
+            text-shadow: 0 0 5px var(--glow-color);
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f00;
+            font-size: 3rem;
+            font-weight: bold;
+            z-index: 100;
+            display: none;
+            text-shadow: 0 0 10px #f00;
+            text-align: center;
+        }
+
+        #restart-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid #f00;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-shadow: 0 0 5px #f00;
+            display: none;
+        }
+
+        #restart-btn:hover {
+            background: rgba(255, 0, 0, 0.5);
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.3);
+            animation: scanline 3s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                    linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -3;
+            animation: grid-move 20s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 1000px 1000px; }
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #back-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid var(--glow-color);
+            color: var(--glow-color);
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #back-btn:hover {
+            background: rgba(0, 255, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+<div class="cyber-bg"></div>
+<div class="cyber-grid"></div>
+<div class="particles" id="particles"></div>
+
+<div class="crt-screen">
+    <div class="glass-reflection"></div>
+    <div class="scanline"></div>
+
+    <h1 class="title">ЗМЕЙКА-3000 | HOLO MODE</h1>
+
+    <div id="ui">
+        ОПЕРАТОР: <span id="player-name"></span> |
+        СЧЁТ: <span id="score">0</span>
+    </div>
+
+    <div id="game-over">
+        СИСТЕМНЫЙ СБОЙ<br>
+        <span id="final-score">0</span><br>
+        <button id="restart-btn">ПЕРЕЗАГРУЗИТЬ СИСТЕМУ</button>
+    </div>
+
+    <div id="game-container"></div>
+
+    <button id="back-btn">ВЕРНУТЬСЯ В ТЕРМИНАЛ</button>
+</div>
+
+<script>
+    // Получаем данные из Twig
+    const username = "{{ username|escape('js') }}";
+    const snakeColorHex = "{{ colorHex|default('#00FF00') }}";
+    let snakeColor = parseInt(snakeColorHex.replace('#', '0x'), 16);
+
+    // Отображаем игрока
+    document.getElementById('player-name').textContent = username;
+
+    // Инициализация частиц
+    function createParticles() {
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 50;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+
+            const startX = Math.random() * 100;
+            const startY = Math.random() * 100;
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 50;
+            const endX = startX + Math.cos(angle) * distance;
+            const endY = startY + Math.sin(angle) * distance;
+            const size = Math.random() * 3 + 1;
+            const opacity = Math.random() * 0.5 + 0.1;
+            const duration = 10 + Math.random() * 20;
+            const delay = Math.random() * -20;
+
+            particle.style.setProperty('--x-end', endX - startX);
+            particle.style.setProperty('--y-end', endY - startY);
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${startX}%`;
+            particle.style.top = `${startY}%`;
+            particle.style.opacity = opacity;
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.animationDelay = `${delay}s`;
+
+            particlesContainer.appendChild(particle);
+        }
+    }
+
+    createParticles();
+
+    // Основные переменные игры
+    let scene, camera, renderer;
+    let snake = [], snakeDir = new THREE.Vector3(1, 0, 0);
+    let segmentSize = 1;
+    let food;
+    let score = 0;
+    let clock = new THREE.Clock();
+    let moveTimer = 0, moveInterval = 0.15;
+    const fieldSize = 20;
+
+    // Инициализация игры
+    init();
+    animate();
+
+    function init() {
+        // Сцена
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        // Камера
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 20, 25);
+        camera.lookAt(0, 0, 0);
+
+        // Рендерер
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        // Освещение
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Пол
+        const floorGeometry = new THREE.PlaneGeometry(50, 50);
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x001100,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Сетка
+        const gridHelper = new THREE.GridHelper(fieldSize, fieldSize, 0x00AA00, 0x003300);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // Борты
+        createWalls();
+
+        // Змея
+        const head = createSegment();
+        head.castShadow = true;
+        scene.add(head);
+        snake.push(head);
+
+        // Еда
+        spawnFood();
+
+        // Обработчики событий
+        window.addEventListener('keydown', handleKeys);
+        window.addEventListener('resize', onWindowResize);
+
+        // Кнопки интерфейса
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+    }
+
+    function createWalls() {
+        const wallHeight = 2;
+        const wallThickness = 0.8;
+        const halfSize = fieldSize / 2;
+
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0x004400,
+            roughness: 0.7,
+            metalness: 0.3,
+            transparent: true,
+            opacity: 0.7
+        });
+
+        const walls = [
+            new THREE.Mesh(new THREE.BoxGeometry(fieldSize, wallHeight, wallThickness), wallMaterial),
+            new THREE.Mesh(new THREE.BoxGeometry(fieldSize, wallHeight, wallThickness), wallMaterial),
+            new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, fieldSize), wallMaterial),
+            new THREE.Mesh(new THREE.BoxGeometry(wallThickness, wallHeight, fieldSize), wallMaterial)
+        ];
+
+        walls[0].position.set(0, wallHeight/2, -halfSize - wallThickness/2);
+        walls[1].position.set(0, wallHeight/2, halfSize + wallThickness/2);
+        walls[2].position.set(-halfSize - wallThickness/2, wallHeight/2, 0);
+        walls[3].position.set(halfSize + wallThickness/2, wallHeight/2, 0);
+
+        walls.forEach(wall => {
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene.add(wall);
+        });
+    }
+
+    function createSegment() {
+        const geo = new THREE.BoxGeometry(segmentSize, segmentSize, segmentSize);
+        const mat = new THREE.MeshStandardMaterial({
+            color: snakeColor,
+            roughness: 0.3,
+            metalness: 0.5,
+            emissive: snakeColor,
+            emissiveIntensity: 0.3
+        });
+        const segment = new THREE.Mesh(geo, mat);
+        segment.castShadow = true;
+        segment.receiveShadow = true;
+        return segment;
+    }
+
+    function spawnFood() {
+        if (food) scene.remove(food);
+
+        const geo = new THREE.SphereGeometry(0.6, 16, 16);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xFF0000,
+            roughness: 0.1,
+            metalness: 0.8,
+            emissive: 0xFF0000,
+            emissiveIntensity: 0.2
+        });
+        food = new THREE.Mesh(geo, mat);
+        food.castShadow = true;
+        food.receiveShadow = true;
+
+        food.position.set(
+            Math.round(Math.random() * (fieldSize-4) - (fieldSize/2 - 2)),
+            0.6,
+            Math.round(Math.random() * (fieldSize-4) - (fieldSize/2 - 2))
+        );
+
+        scene.add(food);
+    }
+
+    function handleKeys(e) {
+        if (e.key === 'ArrowUp' && snakeDir.z === 0) snakeDir.set(0, 0, -1);
+        if (e.key === 'ArrowDown' && snakeDir.z === 0) snakeDir.set(0, 0, 1);
+        if (e.key === 'ArrowLeft' && snakeDir.x === 0) snakeDir.set(-1, 0, 0);
+        if (e.key === 'ArrowRight' && snakeDir.x === 0) snakeDir.set(1, 0, 0);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function gameOver() {
+        document.getElementById('game-over').style.display = 'block';
+        document.getElementById('restart-btn').style.display = 'inline-block';
+        document.getElementById('final-score').textContent = score;
+
+        // Отправляем результат на сервер
+        fetch('/save-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                score: score
+            })
+        });
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+        moveTimer += delta;
+        if (moveTimer >= moveInterval) {
+            moveTimer = 0;
+            updateSnake();
+        }
+
+        if (food) food.rotation.y += 0.02;
+
+        renderer.render(scene, camera);
+    }
+
+    function updateSnake() {
+        const newHeadPos = snake[0].position.clone().add(snakeDir);
+        const halfSize = fieldSize / 2;
+
+        if (Math.abs(newHeadPos.x) >= halfSize || Math.abs(newHeadPos.z) >= halfSize) {
+            gameOver();
+            return;
+        }
+
+        for (let i = 1; i < snake.length - 1; i++) {
+            if (newHeadPos.distanceTo(snake[i].position) < 0.1) {
+                gameOver();
+                return;
+            }
+        }
+
+        for (let i = snake.length - 1; i > 0; i--) {
+            snake[i].position.copy(snake[i - 1].position);
+        }
+        snake[0].position.copy(newHeadPos);
+
+        if (snake[0].position.distanceTo(food.position) < 1.0) {
+            const tail = snake[snake.length - 1];
+            const newSeg = createSegment();
+            newSeg.position.copy(tail.position);
+            snake.push(newSeg);
+            scene.add(newSeg);
+            score++;
+            document.getElementById('score').textContent = score;
+            spawnFood();
+        }
+    }
+</script>
+</body>
+</html>

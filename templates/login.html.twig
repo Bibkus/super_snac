@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЗМЕЙКА-3000 | HOLO TERMINAL</title>
+    <style>
+        :root {
+            --glow-color: #0f0;
+            --crt-curve: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: var(--glow-color);
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                    linear-gradient(rgba(0, 30, 0, 0.2) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 30, 0, 0.2) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--glow-color);
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(1px);
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { transform: translate(calc(var(--x-end) * 1vw), calc(var(--y-end) * 1vh)) rotate(360deg); opacity: 0; }
+        }
+
+        .crt-screen {
+            width: 90%;
+            max-width: 650px;
+            background: rgba(0, 10, 0, 0.7);
+            border: 4px solid var(--glow-color);
+            border-radius: var(--crt-curve);
+            padding: 30px;
+            position: relative;
+            box-shadow:
+                    0 0 30px rgba(0, 255, 0, 0.5),
+                    inset 0 0 30px rgba(0, 255, 0, 0.3);
+            transform-style: preserve-3d;
+            transition: transform 0.1s linear;
+            will-change: transform;
+        }
+
+        .crt-screen::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            border-radius: calc(var(--crt-curve) - 10px);
+            pointer-events: none;
+        }
+
+        .glass-reflection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.1) 0%,
+                    transparent 30%,
+                    transparent 70%,
+                    rgba(255, 255, 255, 0.05) 100%
+            );
+            border-radius: var(--crt-curve);
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            text-shadow:
+                    0 0 5px var(--glow-color),
+                    0 0 10px var(--glow-color);
+            letter-spacing: 3px;
+            position: relative;
+            color: #fff;
+        }
+
+        .title::after {
+            content: "▮";
+            animation: cursor-blink 1s infinite;
+            position: absolute;
+            color: var(--glow-color);
+        }
+
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            color: var(--glow-color);
+            text-shadow: 0 0 5px var(--glow-color);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 5, 0, 0.8);
+            border: 2px solid var(--glow-color);
+            color: var(--glow-color);
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            outline: none;
+            border-radius: 5px;
+            box-shadow:
+                    inset 0 0 10px rgba(0, 255, 0, 0.2),
+                    0 0 10px rgba(0, 255, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            box-shadow:
+                    inset 0 0 10px rgba(0, 255, 0, 0.3),
+                    0 0 15px var(--glow-color);
+        }
+
+        .color-picker {
+            margin: 2rem 0;
+        }
+
+        .color-slider {
+            width: 100%;
+            height: 10px;
+            -webkit-appearance: none;
+            background: linear-gradient(to right,
+            hsl(0, 100%, 50%),
+            hsl(60, 100%, 50%),
+            hsl(120, 100%, 50%),
+            hsl(180, 100%, 50%),
+            hsl(240, 100%, 50%),
+            hsl(300, 100%, 50%),
+            hsl(360, 100%, 50%));
+            outline: none;
+            border-radius: 5px;
+            box-shadow:
+                    inset 0 0 5px rgba(0, 0, 0, 0.5),
+                    0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .color-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--glow-color);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+        }
+
+        .launch-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(
+                    to bottom,
+                    rgba(0, 255, 0, 0.3),
+                    rgba(0, 100, 0, 0.5)
+            );
+            border: 2px solid var(--glow-color);
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            margin-top: 1.5rem;
+            border-radius: 5px;
+            box-shadow:
+                    0 0 15px rgba(0, 255, 0, 0.5),
+                    inset 0 0 10px rgba(0, 255, 0, 0.2);
+            text-shadow: 0 0 5px var(--glow-color);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .launch-btn:hover {
+            background: linear-gradient(
+                    to bottom,
+                    rgba(0, 255, 0, 0.5),
+                    rgba(0, 150, 0, 0.7)
+            );
+            box-shadow:
+                    0 0 25px var(--glow-color),
+                    inset 0 0 15px rgba(0, 255, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .launch-btn:active {
+            transform: translateY(1px);
+            box-shadow:
+                    0 0 10px rgba(0, 255, 0, 0.5),
+                    inset 0 0 15px rgba(0, 255, 0, 0.3);
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 0, 0.3);
+            animation: scanline 3s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: var(--crt-curve);
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                    linear-gradient(rgba(0, 255, 0, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -3;
+            animation: grid-move 20s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 1000px 1000px; }
+        }
+
+        .pulse-circle {
+            position: fixed;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+            animation: pulse 8s infinite ease-out;
+            z-index: -2;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { opacity: 0.7; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        form {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+<div class="cyber-bg"></div>
+<div class="cyber-grid"></div>
+<div class="particles" id="particles"></div>
+
+<div class="crt-screen" id="crtScreen">
+    <div class="glass-reflection"></div>
+    <div class="scanline"></div>
+
+    <h1 class="title">ЗМЕЙКА-3000 | ТЕРМИНАЛ ДОСТУПА</h1>
+
+    <form action="/start-game" method="POST">
+        <div class="form-group">
+            <label>ВЫБЕРИТЕ ОПЕРАТОРА:</label>
+            <select name="username" id="username">
+                {% for user in users %}
+                    <option value="{{ user }}">{{ user }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>СОЗДАТЬ НОВОГО:</label>
+            <input type="text" name="new_user" placeholder="ВВЕДИТЕ ИДЕНТИФИКАТОР" maxlength="15">
+        </div>
+
+        <div class="form-group color-picker">
+            <label>НАСТРОЙКА ЦВЕТА:</label>
+            <input type="range" class="color-slider" id="colorSlider" min="0" max="360" value="120">
+            <input type="hidden" name="snake_color" id="snakeColorInput" value="hsl(120, 100%, 50%)">
+        </div>
+
+        <button type="submit" class="launch-btn">ЗАПУСК СИСТЕМЫ</button>
+    </form>
+</div>
+
+<script>
+    // Инициализация частиц
+    function createParticles() {
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+
+            const startX = Math.random() * 100;
+            const startY = Math.random() * 100;
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 50;
+
+            particle.style.setProperty('--x-end', Math.cos(angle) * distance);
+            particle.style.setProperty('--y-end', Math.sin(angle) * distance);
+            particle.style.left = `${startX}%`;
+            particle.style.top = `${startY}%`;
+            particle.style.width = `${Math.random() * 3 + 1}px`;
+            particle.style.height = particle.style.width;
+            particle.style.opacity = Math.random() * 0.5 + 0.1;
+            particle.style.animationDuration = `${10 + Math.random() * 20}s`;
+            particle.style.animationDelay = `${Math.random() * -20}s`;
+
+            container.appendChild(particle);
+        }
+    }
+
+    // Параллакс-эффект
+    const crtScreen = document.getElementById('crtScreen');
+    document.addEventListener('mousemove', (e) => {
+        const x = e.clientX / window.innerWidth - 0.5;
+        const y = e.clientY / window.innerHeight - 0.5;
+        crtScreen.style.transform = `
+            perspective(1000px)
+            rotateX(${-y * 15}deg)
+            rotateY(${x * 15}deg)
+            translateZ(50px)
+        `;
+    });
+    document.addEventListener('mouseleave', () => {
+        crtScreen.style.transform = 'perspective(1000px)';
+    });
+
+    // Выбор цвета
+    const colorSlider = document.getElementById('colorSlider');
+    const colorInput = document.getElementById('snakeColorInput');
+    colorSlider.addEventListener('input', function() {
+        const hue = this.value;
+        colorInput.value = `hsl(${hue}, 100%, 50%)`;
+        document.documentElement.style.setProperty('--glow-color', `hsl(${hue}, 100%, 50%)`);
+    });
+
+    // Инициализация
+    createParticles();
+
+    // Пульсирующие круги
+    setInterval(() => {
+        const circle = document.createElement('div');
+        circle.className = 'pulse-circle';
+        circle.style.width = `${100 + Math.random() * 300}px`;
+        circle.style.height = circle.style.width;
+        circle.style.left = `${Math.random() * 100}%`;
+        circle.style.top = `${Math.random() * 100}%`;
+        circle.style.borderColor = `rgba(0, ${150 + Math.random() * 105}, 0, ${0.1 + Math.random() * 0.2})`;
+        document.body.appendChild(circle);
+        setTimeout(() => circle.remove(), 8000);
+    }, 1000);
+</script>
+</body>
+</html>
